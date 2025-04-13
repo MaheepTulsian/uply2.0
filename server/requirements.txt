@@ -1,0 +1,9 @@
+pymongo
+mongoengine
+fastapi
+fastapi-cors
+uvicorn
+python-dotenv
+pydantic
+passlib[bcrypt]
+bson
