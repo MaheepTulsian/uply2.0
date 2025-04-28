@@ -1,103 +1,164 @@
 // import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, CheckCircle, FileText, Zap, BookOpen, MessageSquare, Chrome } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, CheckCircle, FileText, Zap, BookOpen, MessageSquare, Chrome, Menu, X } from "lucide-react";
 import Hero from "@/assets/hero.svg";
-
-// Custom CSS for the app
-const styles = {
-  container: "min-h-screen bg-[#F0EDCF]",
-  header: "sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-[#0B60B0]/10",
-  navContainer: "container px-20 h-16 flex items-center justify-between",
-  logo: "text-2xl font-bold text-[#0B60B0] flex items-center",
-  navLinks: "hidden md:flex space-x-8",
-  navLink: "text-[#000000] hover:text-[#0B60B0] transition-colors font-medium",
-  heroSection: "container p-20 md:py-32 flex flex-col md:flex-row items-center gap-20",
-  heroContent: "md:w-1/2 space-y-6 text-center md:text-left",
-  heroTitle: "text-4xl md:text-6xl font-bold text-[#000000]",
-  heroHighlight: "text-[#0B60B0]",
-  heroDescription: "text-xl text-[#000000]/80 mt-4",
-  heroButtons: "flex flex-col sm:flex-row gap-4 mt-8 justify-center md:justify-start",
-  heroImage: "md:w-1/2 mt-12 md:mt-0 flex justify-center",
-  featuresSection: "p-20 bg-white",
-  featureCard: "h-full bg-white border border-[#0B60B0]/10 hover:border-[#0B60B0]/30 hover:shadow-lg transition-all",
-  featureIcon: "bg-[#40A2D8]/10 p-3 rounded-lg w-12 h-12 flex items-center justify-center text-[#0B60B0]",
-  sections: "p-16 container",
-  sectionTitle: "text-3xl font-bold text-center mb-12 text-[#000000]",
-  highlight: "text-[#0B60B0]",
-  ctaSection: "bg-[#0B60B0] text-white py-20",
-  ctaContainer: "container text-center space-y-8",
-  ctaTitle: "text-3xl md:text-4xl font-bold",
-  ctaDescription: "text-xl max-w-2xl mx-auto",
-  footer: "bg-[#000000] text-white py-12",
-  footerContainer: "container px-20",
-  footerLogo: "text-2xl font-bold text-white mb-8",
-  footerLinks: "grid grid-cols-2 md:grid-cols-4 gap-8",
-  footerLinkTitle: "font-bold text-[#40A2D8] mb-4",
-  footerLink: "text-white/80 hover:text-white block mb-2"
-};
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { LOADIPHLPAPI } from "dns";
 
 const UplyLanding = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Handle scroll effect for navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Close mobile menu when clicking on a link
+  const handleNavLinkClick = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
-    <div className={styles.container}>
+    <div className="min-h-screen bg-[#F0EDCF] overflow-x-hidden">
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 md:hidden" onClick={() => setIsMenuOpen(false)}>
+          <div className="bg-white h-screen w-4/5 max-w-sm p-6 pt-20" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="absolute top-6 right-6 text-[#0B60B0]"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <X size={24} />
+            </button>
+            <div className="text-2xl font-bold text-[#0B60B0] flex items-center mb-10">
+              <Zap className="mr-2" />
+              uply
+            </div>
+            <nav className="flex flex-col space-y-6">
+              <a
+                href="#features"
+                className="text-[#000000] hover:text-[#0B60B0] transition-colors font-medium text-lg"
+                onClick={handleNavLinkClick}
+              >
+                Features
+              </a>
+              <a
+                href="#how-it-works"
+                className="text-[#000000] hover:text-[#0B60B0] transition-colors font-medium text-lg"
+                onClick={handleNavLinkClick}
+              >
+                How It Works
+              </a>
+              <a
+                href="#pricing"
+                className="text-[#000000] hover:text-[#0B60B0] transition-colors font-medium text-lg"
+                onClick={handleNavLinkClick}
+              >
+                Pricing
+              </a>
+              <a
+                href="#faq"
+                className="text-[#000000] hover:text-[#0B60B0] transition-colors font-medium text-lg"
+                onClick={handleNavLinkClick}
+              >
+                FAQ
+              </a>
+            </nav>
+            <div className="mt-10 flex flex-col space-y-4">
+              <Button variant="outline" className="w-full border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-white">
+                Log In
+              </Button>
+              <Button className="w-full bg-[#0B60B0] hover:bg-[#0B60B0]/90">
+                Sign Up Free
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header/Navbar */}
-      <header className={styles.header}>
-        <div className={styles.navContainer}>
-          <div className={styles.logo}>
+      <header className={`sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b transition-shadow duration-300 ${scrolled ? 'shadow-md border-[#0B60B0]/5' : 'border-[#0B60B0]/10'}`}>
+        <div className="container px-4 sm:px-6 lg:px-8 xl:px-20 mx-auto h-16 flex items-center justify-between">
+          <div className="text-xl sm:text-2xl font-bold text-[#0B60B0] flex items-center">
             <Zap className="mr-2" />
             uply
           </div>
-          <nav className={styles.navLinks}>
-            <a href="#features" className={styles.navLink}>Features</a>
-            <a href="#how-it-works" className={styles.navLink}>How It Works</a>
-            <a href="#pricing" className={styles.navLink}>Pricing</a>
-            <a href="#faq" className={styles.navLink}>FAQ</a>
+
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden text-[#0B60B0]"
+            onClick={() => setIsMenuOpen(true)}
+          >
+            <Menu size={24} />
+          </button>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex space-x-4 lg:space-x-8">
+            <a href="#features" className="text-[#000000] hover:text-[#0B60B0] transition-colors font-medium">Features</a>
+            <a href="#how-it-works" className="text-[#000000] hover:text-[#0B60B0] transition-colors font-medium">How It Works</a>
+            <a href="#faq" className="text-[#000000] hover:text-[#0B60B0] transition-colors font-medium">FAQ</a>
           </nav>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" className="hidden md:flex border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-white">
-              Log In
+
+          {/* Desktop buttons */}
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="outline" className="bg-white border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-white">
+              <Link to="/auth">Log In</Link>
             </Button>
             <Button className="bg-[#0B60B0] hover:bg-[#0B60B0]/90">
-              Sign Up Free
+              <Link to="/auth">Sign Up Free</Link>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className={styles.heroSection}>
-        <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>
-            AI-Powered <span className={styles.heroHighlight}>Career Assistant</span> Platform
+      <section className="container px-4 sm:px-6 lg:px-8 xl:px-20 py-10 sm:py-16 md:py-24 lg:py-32 mx-auto flex flex-col md:flex-row items-center gap-8 md:gap-12 lg:gap-20">
+        <div className="md:w-1/2 space-y-4 sm:space-y-6 text-center md:text-left ">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#000000] leading-tight">
+            AI-Powered <span className="text-[#0B60B0]">Career Assistant</span> Platform
           </h1>
-          <p className={styles.heroDescription}>
+          <p className="text-base sm:text-lg lg:text-xl text-[#000000]/80 mt-2 sm:mt-4">
             Streamline your entire job application process with Agentic AI. Personalized, not randomly generated—making job prep faster, smarter, and truly tailored.
           </p>
-          <div className={styles.heroButtons}>
-            <Button className="bg-[#0B60B0] hover:bg-[#0B60B0]/90 px-8 py-6 text-lg">
-              Get Started Free
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8 justify-center md:justify-start">
+            <Button className="bg-[#0B60B0] hover:bg-[#0B60B0]/90 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg w-full sm:w-auto">
+              <Link to="/auth">Get Started Free</Link>
             </Button>
-            <Button variant="outline" className="border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-white px-8 py-6 text-lg">
-              See Demo <ArrowRight className="ml-2 h-4 w-4" />
+            <Button variant="outline" className="border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-white px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-base sm:text-lg w-full sm:w-auto">
+              See Demo <ArrowRight className="ml-1 sm:ml-2 h-4 w-4" />
             </Button>
           </div>
         </div>
-        <div className={styles.heroImage}>
-          <img 
-            src={Hero} 
-            alt="Uply platform demonstration" 
-            className="rounded-lg"
+        <div className="md:w-1/2 mt-8 sm:mt-10 md:mt-0 flex justify-center">
+          <img
+            src={Hero}
+            alt="Uply platform demonstration"
+            className="rounded-lg w-full max-w-md md:max-w-full object-cover"
           />
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className={styles.featuresSection}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>
-            Powerful <span className={styles.highlight}>Features</span> To Boost Your Career
+      <section id="features" className="py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="container mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-[#000000]">
+            Powerful <span className="text-[#0B60B0]">Features</span> To Boost Your Career
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-8 sm:mt-12">
             {[
               {
                 icon: <FileText />,
@@ -130,15 +191,15 @@ const UplyLanding = () => {
                 description: "Everything is tailored to your experience, skills, and target roles, not randomly generated."
               }
             ].map((feature, index) => (
-              <Card key={index} className={styles.featureCard}>
-                <CardHeader>
-                  <div className={styles.featureIcon}>
+              <Card key={index} className="h-full bg-white border border-[#0B60B0]/10 hover:border-[#0B60B0]/30 hover:shadow-lg transition-all">
+                <CardHeader className="pb-2">
+                  <div className="bg-[#40A2D8]/10 p-2 sm:p-3 rounded-lg w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-[#0B60B0]">
                     {feature.icon}
                   </div>
-                  <CardTitle className="mt-4">{feature.title}</CardTitle>
+                  <CardTitle className="mt-3 sm:mt-4 text-lg sm:text-xl">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-base">{feature.description}</CardDescription>
+                  <CardDescription className="text-sm sm:text-base">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             ))}
@@ -147,12 +208,12 @@ const UplyLanding = () => {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className={styles.sections}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>
-            How <span className={styles.highlight}>Uply</span> Works
+      <section id="how-it-works" className="py-10 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-[#000000]">
+            How <span className="text-[#0B60B0]">Uply</span> Works
           </h2>
-          <div className="grid md:grid-cols-3 gap-12 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12 mt-8 sm:mt-12">
             {[
               {
                 step: "01",
@@ -170,10 +231,10 @@ const UplyLanding = () => {
                 description: "Use our tools to submit applications, prepare for interviews, and land your dream job."
               }
             ].map((step, index) => (
-              <div key={index} className="text-center space-y-4">
-                <div className="text-6xl font-bold text-[#40A2D8]/20">{step.step}</div>
-                <h3 className="text-2xl font-bold text-[#0B60B0]">{step.title}</h3>
-                <p className="text-[#000000]/70">{step.description}</p>
+              <div key={index} className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 bg-white/50 rounded-lg border border-[#0B60B0]/5 hover:shadow-md transition-all">
+                <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#40A2D8]/20">{step.step}</div>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#0B60B0]">{step.title}</h3>
+                <p className="text-sm sm:text-base text-[#000000]/70">{step.description}</p>
               </div>
             ))}
           </div>
@@ -181,12 +242,12 @@ const UplyLanding = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-white py-16 px-20">
-        <div className="container">
-          <h2 className={styles.sectionTitle}>
-            What <span className={styles.highlight}>Users</span> Say
+      <section className="bg-white py-10 sm:py-16 px-4 sm:px-6 lg:px-12 xl:px-20">
+        <div className="container mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-[#000000]">
+            What <span className="text-[#0B60B0]">Users</span> Say
           </h2>
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mt-8 sm:mt-12">
             {[
               {
                 quote: "Uply helped me land interviews at 3 FAANG companies by tailoring my resume perfectly for each role.",
@@ -204,10 +265,10 @@ const UplyLanding = () => {
                 role: "Data Scientist"
               }
             ].map((testimonial, index) => (
-              <Card key={index} className="bg-[#F0EDCF]/50">
-                <CardContent className="pt-8">
-                  <p className="text-lg italic">"{testimonial.quote}"</p>
-                  <div className="mt-6">
+              <Card key={index} className="bg-[#F0EDCF]/50 h-full">
+                <CardContent className="pt-6 sm:pt-8">
+                  <p className="text-base sm:text-lg italic">"{testimonial.quote}"</p>
+                  <div className="mt-4 sm:mt-6">
                     <p className="font-bold">{testimonial.author}</p>
                     <p className="text-sm text-[#000000]/70">{testimonial.role}</p>
                   </div>
@@ -218,100 +279,11 @@ const UplyLanding = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className={styles.sections}>
-        <div className="container">
-          <h2 className={styles.sectionTitle}>
-            Simple <span className={styles.highlight}>Pricing</span> Plans
-          </h2>
-          <div className="flex flex-col md:flex-row justify-center gap-8 mt-12">
-            {[
-              {
-                name: "Free",
-                price: "$0",
-                period: "forever",
-                description: "Basic tools to get started",
-                features: [
-                  "Basic Resume Builder",
-                  "5 AI Cover Letters per month",
-                  "Limited Mock Interviews",
-                  "Basic Chrome Extension"
-                ],
-                buttonText: "Get Started",
-                popular: false
-              },
-              {
-                name: "Pro",
-                price: "$19",
-                period: "per month",
-                description: "Everything you need for job hunting",
-                features: [
-                  "Advanced Resume Builder",
-                  "Unlimited Cover Letters",
-                  "Unlimited Mock Interviews with Feedback",
-                  "Company-specific Leetcode Questions",
-                  "Advanced Chrome Extension",
-                  "Priority Support"
-                ],
-                buttonText: "Go Pro",
-                popular: true
-              },
-              {
-                name: "Team",
-                price: "$99",
-                period: "per month",
-                description: "For teams and organizations",
-                features: [
-                  "All Pro Features",
-                  "Up to 10 Team Members",
-                  "Team Analytics Dashboard",
-                  "Customized Training Materials",
-                  "Dedicated Account Manager"
-                ],
-                buttonText: "Contact Sales",
-                popular: false
-              }
-            ].map((plan, index) => (
-              <Card key={index} className={`w-full md:w-80 ${plan.popular ? 'border-[#0B60B0] shadow-lg scale-105' : 'border-[#0B60B0]/20'}`}>
-                {plan.popular && (
-                  <div className="bg-[#0B60B0] text-white text-center py-1 text-sm font-medium">
-                    MOST POPULAR
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <div className="mt-4 flex items-baseline">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="ml-2 text-[#000000]/70">/{plan.period}</span>
-                  </div>
-                  <CardDescription className="mt-4">{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-[#0B60B0] mr-2" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className={`w-full ${plan.popular ? 'bg-[#0B60B0]' : 'bg-[#40A2D8]'} hover:bg-opacity-90`}>
-                    {plan.buttonText}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section id="faq" className="bg-white py-16">
-        <div className="container">
-          <h2 className={styles.sectionTitle}>
-            Frequently Asked <span className={styles.highlight}>Questions</span>
+        <div className="container mx-auto ">
+          <h2 className="text-3xl font-bold text-center mb-12 text-[#000000]">
+            Frequently Asked <span className="text-[#0B60B0]">Questions</span>
           </h2>
           <div className="mt-12 max-w-3xl mx-auto space-y-6">
             {[
@@ -350,10 +322,10 @@ const UplyLanding = () => {
       </section>
 
       {/* CTA Section */}
-      <section className={styles.ctaSection}>
-        <div className={styles.ctaContainer}>
-          <h2 className={styles.ctaTitle}>Ready to Supercharge Your Job Search?</h2>
-          <p className={styles.ctaDescription}>
+      <section className="bg-[#0B60B0] text-white py-20">
+        <div className="container text-center space-y-8 mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold">Ready to Supercharge Your Job Search?</h2>
+          <p className="text-xl max-w-2xl mx-auto">
             Join thousands of professionals who have transformed their career with Uply.
           </p>
           <Button className="bg-white text-[#0B60B0] hover:bg-white/90 px-8 py-6 text-lg">
@@ -363,43 +335,43 @@ const UplyLanding = () => {
       </section>
 
       {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerContainer}>
-          <div className={styles.footerLogo}>
+      <footer className="bg-[#000000] text-white py-8 sm:py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-20">
+          <div className="text-xl sm:text-2xl font-bold text-white mb-6 sm:mb-8">
             <Zap className="inline-block mr-2" />
             uply
           </div>
-          <div className={styles.footerLinks}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div>
-              <h3 className={styles.footerLinkTitle}>Product</h3>
-              <a href="#" className={styles.footerLink}>Features</a>
-              <a href="#" className={styles.footerLink}>Pricing</a>
-              <a href="#" className={styles.footerLink}>Chrome Extension</a>
-              <a href="#" className={styles.footerLink}>Integrations</a>
+              <h3 className="font-bold text-[#40A2D8] mb-3 sm:mb-4 text-sm sm:text-base">Product</h3>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Features</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Pricing</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Chrome Extension</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Integrations</a>
             </div>
             <div>
-              <h3 className={styles.footerLinkTitle}>Resources</h3>
-              <a href="#" className={styles.footerLink}>Blog</a>
-              <a href="#" className={styles.footerLink}>Career Tips</a>
-              <a href="#" className={styles.footerLink}>Interview Guides</a>
-              <a href="#" className={styles.footerLink}>Leetcode Solutions</a>
+              <h3 className="font-bold text-[#40A2D8] mb-3 sm:mb-4 text-sm sm:text-base">Resources</h3>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Blog</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Career Tips</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Interview Guides</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Leetcode Solutions</a>
             </div>
             <div>
-              <h3 className={styles.footerLinkTitle}>Company</h3>
-              <a href="#" className={styles.footerLink}>About Us</a>
-              <a href="#" className={styles.footerLink}>Careers</a>
-              <a href="#" className={styles.footerLink}>Contact</a>
-              <a href="#" className={styles.footerLink}>Partners</a>
+              <h3 className="font-bold text-[#40A2D8] mb-3 sm:mb-4 text-sm sm:text-base">Company</h3>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">About Us</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Careers</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Contact</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Partners</a>
             </div>
             <div>
-              <h3 className={styles.footerLinkTitle}>Legal</h3>
-              <a href="#" className={styles.footerLink}>Privacy Policy</a>
-              <a href="#" className={styles.footerLink}>Terms of Service</a>
-              <a href="#" className={styles.footerLink}>Cookie Policy</a>
-              <a href="#" className={styles.footerLink}>GDPR</a>
+              <h3 className="font-bold text-[#40A2D8] mb-3 sm:mb-4 text-sm sm:text-base">Legal</h3>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Privacy Policy</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Terms of Service</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">Cookie Policy</a>
+              <a href="#" className="text-white/80 hover:text-white block mb-2 text-sm sm:text-base">GDPR</a>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-white/20 text-center text-white/60">
+          <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-white/20 text-center text-white/60 text-sm">
             © {new Date().getFullYear()} Uply. All rights reserved.
           </div>
         </div>

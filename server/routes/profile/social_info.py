@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Body
-from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
-from models.profile_schema import Profile, Social
-from pydantic import BaseModel, field_validator
-import re
+from pydantic import BaseModel, model_validator
+from controllers.profile.socials import update_social_links
 
 router = APIRouter()
 
@@ -17,66 +15,52 @@ class SocialsUpdate(BaseModel):
     stackOverflow: str | None = None
     leetcode: str | None = None
 
-    @field_validator('*', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def validate_urls(cls, value, field):
-        url_regex = r"^(https?:\/\/)?([\w\d-]+\.)+[\w]{2,}(\/[\w\d\-./?%&=]*)?$"
-        if value and not re.fullmatch(url_regex, value):
-            raise ValueError(f"Invalid URL format for {field.name}")
-        return value
-
-def mongo_to_dict(obj):
-    """Custom serializer for MongoEngine documents"""
-    if isinstance(obj, ObjectId):
-        return str(obj)
-    if isinstance(obj, dict):
-        return {k: mongo_to_dict(v) for k, v in obj.items()}
-    if hasattr(obj, '_data'):
-        data = obj._data
-        if 'id' not in data and hasattr(obj, 'id'):
-            data['id'] = str(obj.id)
-        return mongo_to_dict(data)
-    if isinstance(obj, list):
-        return [mongo_to_dict(v) for v in obj]
-    return obj
+    def validate_at_least_one(cls, values):
+        if not any(values.values()):
+            raise ValueError("At least one social link is required")
+        return values
 
 @router.post("/{user_id}/socials", status_code=status.HTTP_200_OK)
-async def update_social_links(user_id: str, socials_update: SocialsUpdate = Body(...)):
-    # Validate at least one social is provided
-    if not any(socials_update.model_dump().values()):
+async def update_social_links_route(user_id: str, socials_update: SocialsUpdate = Body(...)):
+    try:
+        # Convert Pydantic model to dictionary for the controller
+        socials_dict = socials_update.model_dump()
+        
+        # Use the controller to handle business logic
+        result = update_social_links(user_id, socials_dict)
+        
+        if not result["success"]:
+            if any("User not found" in error for error in result.get("errors", [])):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found."
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=result["errors"]
+                )
+        
+        # Create response with serialized profile
+        serialized_profile = jsonable_encoder(result["profile"])
+        
+        return {
+            "message": result["message"],
+            "profile": serialized_profile
+        }
+    
+    except HTTPException as he:
+        raise he
+    except ValueError as ve:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one social link is required."
+            detail=str(ve)
         )
-
-    try:
-        # Convert string ID to ObjectId
-        obj_id = ObjectId(user_id)
-    except:
+    except Exception as e:
+        print(f"Error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error."
         )
-
-    # Create update dictionary, removing None values
-    update_data = {f"socials.{k}": v for k, v in socials_update.model_dump().items() if v is not None}
-
-    # Update profile using MongoEngine
-    profile = Profile.objects(id=obj_id).modify(
-        __raw__={"$set": update_data},
-        new=True
-    )
-
-    if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found."
-        )
-
-    # Convert MongoEngine document to serializable format
-    profile_dict = mongo_to_dict(profile)
-
-    return {
-        "message": "Social links updated successfully.",
-        "profile": profile_dict
-    }

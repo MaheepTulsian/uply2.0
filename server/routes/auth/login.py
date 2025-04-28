@@ -1,27 +1,37 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from mongoengine import DoesNotExist
-from models.profile_schema import Profile
-from passlib.context import CryptContext
+from fastapi import APIRouter, HTTPException, Body, status
+from pydantic import BaseModel, EmailStr
+from controllers.auth import login_with_email
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 class LoginRequest(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 
-@router.post("/login")
+@router.post("/login", status_code=status.HTTP_200_OK)
 async def login_user(data: LoginRequest):
+    """
+    Authenticate a user with email and password
+    """
     try:
-        user = Profile.objects.get(username=data.username)
-        if not pwd_context.verify(data.password, user.password):
-            raise HTTPException(status_code=400, detail="Invalid username or password")
-
-        return {"message": "Login successful", "userId": str(user.id)}
-    except DoesNotExist:
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+        result = login_with_email(data.email, data.password)
+        
+        if not result["success"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result["errors"][0] if isinstance(result["errors"], list) else result["errors"]
+            )
+        
+        return {
+            "message": result["message"],
+            "data": result.get("data", {})
+        }
+        
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )

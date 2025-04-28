@@ -6,4 +6,7 @@ uvicorn
 python-dotenv
 pydantic
 passlib[bcrypt]
-bson
+firebase-admin
+python-jose[cryptography]
+python-multipart
+email-validator
