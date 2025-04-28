@@ -1,61 +1,72 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, Zap } from 'lucide-react';
+import useAuthStore from '@/store/useAuthStore';
 
 // Define types for form states
 interface LoginFormState {
-  username: string;
+  email: string;
   password: string;
 }
 
 interface RegisterFormState {
-  username: string;
+  email: string;
   password: string;
-}
-
-// API response types
-interface AuthResponse {
-  message: string;
-  userId?: string;
-  detail?: string;
+  username: string;
 }
 
 type TabType = 'login' | 'register';
 
 const AuthPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { login, register, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  
   const [activeTab, setActiveTab] = useState<TabType>('login');
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
   
   // Login form state
   const [loginForm, setLoginForm] = useState<LoginFormState>({
-    username: '',
+    email: '',
     password: ''
   });
   
   // Register form state
   const [registerForm, setRegisterForm] = useState<RegisterFormState>({
-    username: '',
-    password: ''
+    email: '',
+    password: '',
+    username: ''
   });
+  
+  // Redirect if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Reset error when switching tabs
+  useEffect(() => {
+    clearError();
+  }, [activeTab, clearError]);
   
   // Handle login form change
   const handleLoginChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setLoginForm({
       ...loginForm,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     });
   };
   
   // Handle register form change
   const handleRegisterChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setRegisterForm({
       ...registerForm,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
   
@@ -67,88 +78,41 @@ const AuthPage: React.FC = () => {
   // Handle login submission
   const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      const response = await fetch('http://localhost:8000/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: loginForm.username,
-          password: loginForm.password,
-        }),
-      });
-      
-      const data: AuthResponse = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.detail || 'Login failed');
-      }
-      
-      // Store user ID in localStorage
-      if (data.userId) {
-        localStorage.setItem('userId', data.userId);
-        
-        // Redirect to dashboard
-        window.location.href = '/dashboard';
-      } else {
-        throw new Error('User ID not received from server');
-      }
-      
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+    await login(loginForm.email, loginForm.password);
   };
   
   // Handle registration submission
   const handleRegister = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
     
-    // Validate password strength (optional)
+    // Validate password strength
     if (registerForm.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setIsLoading(false);
+      // Use store's error mechanism
+      useAuthStore.setState({ error: 'Password must be at least 6 characters long' });
       return;
     }
     
-    try {
-      const response = await fetch('http://localhost:8000/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: registerForm.username,
-          password: registerForm.password,
-        }),
-      });
-      
-      const data: AuthResponse = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed');
-      }
-      
-      // Success - switch to login tab
+    await register(registerForm.email, registerForm.password, registerForm.username);
+    
+    // Switch to login tab after successful registration
+    if (!error) {
       setActiveTab('login');
       setLoginForm({
         ...loginForm,
-        username: registerForm.username,
+        email: registerForm.email,
         password: ''
       });
-      
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
-      setIsLoading(false);
     }
+  };
+
+  // Handle Google Sign-In
+  const handleGoogleSignIn = () => {
+    // This would typically integrate with the Firebase Google Auth
+    // For simplicity, we're just showing a placeholder implementation
+    console.log('Google Sign-In - Implement with Firebase SDK');
+    
+    // When you get the idToken from Google Auth:
+    // loginWithGoogle(idToken);
   };
 
   return (
@@ -156,7 +120,6 @@ const AuthPage: React.FC = () => {
       {/* Left side - Background image section */}
       <div className="hidden md:flex w-1/2 relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-90 ml-2 my-2">
-          {/* Replace with your actual cover image import */}
           <img 
             src="https://www.freevector.com/uploads/vector/preview/85990/vecteezyseamless-geometric-seamless_background-3-HS1122_generated.jpg"
             alt="Abstract design"
@@ -182,15 +145,16 @@ const AuthPage: React.FC = () => {
               
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Email</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input 
-                    id="username" 
-                    name="username"
+                    id="email" 
+                    name="email"
                     type="email"
                     placeholder="Enter your email" 
                     className="h-12 border-black"
-                    value={loginForm.username}
+                    value={loginForm.email}
                     onChange={handleLoginChange}
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -206,12 +170,14 @@ const AuthPage: React.FC = () => {
                       className="h-12 border-black"
                       value={loginForm.password}
                       onChange={handleLoginChange}
+                      disabled={isLoading}
                       required
                     />
                     <button 
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                       onClick={togglePasswordVisibility}
+                      disabled={isLoading}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -239,13 +205,19 @@ const AuthPage: React.FC = () => {
                   onClick={() => setActiveTab('register')}
                   className="text-sm font-semibold text-[#0B60B0]"
                   type="button"
+                  disabled={isLoading}
                 >
                   Sign up
                 </button>
               </div>
               
               <div className="mt-12 flex justify-center">
-                <Button className="w-full h-12 bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white">
+                <Button 
+                  className="w-full h-12 bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white"
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                >
                   <img src="https://cdn.freebiesupply.com/logos/large/2x/google-icon-logo-black-and-white.png" alt="Google" className="h-5 w-5 mr-2" />
                   Sign in with Google
                 </Button>
@@ -257,15 +229,31 @@ const AuthPage: React.FC = () => {
               
               <form onSubmit={handleRegister} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="register-username">Email</Label>
+                  <Label htmlFor="register-email">Email</Label>
                   <Input 
-                    id="register-username"
-                    name="username"
+                    id="register-email"
+                    name="email"
                     type="email"
                     placeholder="Enter your email" 
                     className="h-12 border-black"
+                    value={registerForm.email}
+                    onChange={handleRegisterChange}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="register-username">Username</Label>
+                  <Input 
+                    id="register-username"
+                    name="username"
+                    type="text"
+                    placeholder="Choose a username" 
+                    className="h-12 border-black"
                     value={registerForm.username}
                     onChange={handleRegisterChange}
+                    disabled={isLoading}
                     required
                   />
                 </div>
@@ -281,6 +269,7 @@ const AuthPage: React.FC = () => {
                       className="h-12 border-black"
                       value={registerForm.password}
                       onChange={handleRegisterChange}
+                      disabled={isLoading}
                       required
                       minLength={6}
                     />
@@ -288,13 +277,12 @@ const AuthPage: React.FC = () => {
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                       onClick={togglePasswordVisibility}
+                      disabled={isLoading}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
-                
-
                 
                 {error && <p className="text-red-500 text-sm">{error}</p>}
                 
@@ -317,13 +305,19 @@ const AuthPage: React.FC = () => {
                   onClick={() => setActiveTab('login')}
                   className="text-sm font-semibold text-[#0B60B0]"
                   type="button"
+                  disabled={isLoading}
                 >
                   Sign in
                 </button>
               </div>
               
               <div className="mt-12 flex justify-center">
-                <Button className="w-full h-12 bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white">
+                <Button 
+                  className="w-full h-12 bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white"
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                >
                   <img src="https://cdn.freebiesupply.com/logos/large/2x/google-icon-logo-black-and-white.png" alt="Google" className="h-5 w-5 mr-2" />
                   Sign up with Google
                 </Button>

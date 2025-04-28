@@ -1,19 +1,23 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+// import { useEffect } from "react";
 import LandingPage from "@/pages/LandingPage";
 import AuthPage from "@/pages/AuthPage";
+import useAuthStore from "@/store/useAuthStore";
+
+// Create a type for protected route props
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
 
 function App() {
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return localStorage.getItem('userId') !== null;
-  };
+  const { isAuthenticated } = useAuthStore();
 
   // Protected route component
-  const ProtectedRoute = ({ children }) => {
-    if (!isAuthenticated()) {
+  const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+    if (!isAuthenticated) {
       return <Navigate to="/auth" />;
     }
-    return children;
+    return <>{children}</>;
   };
 
   return (
