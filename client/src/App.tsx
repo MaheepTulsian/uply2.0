@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-// import { useEffect } from "react";
 import LandingPage from "@/pages/LandingPage";
 import AuthPage from "@/pages/AuthPage";
+import Dashboard from "@/pages/Dashboard";
+import ProfilePage from "@/pages/ProfilePage";
 import useAuthStore from "@/store/useAuthStore";
-import Dashboard from "./pages/Dashboard";
 
 // Create a type for protected route props
 interface ProtectedRouteProps {
@@ -32,6 +32,12 @@ function App() {
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         } />
         

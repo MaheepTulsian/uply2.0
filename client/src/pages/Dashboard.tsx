@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,6 @@ import apply from "@/assets/apply.svg";
 import practice from "@/assets/paractice.svg";
 import jd from "@/assets/jd.svg";
 import useAuthStore from "@/store/useAuthStore";
-import { useNavigate } from 'react-router-dom';
 
 // Feature cards data - updated to match Uply features
 const featureCards = [
@@ -107,10 +107,35 @@ const Dashboard: React.FC = () => {
     navigate(path);
   };
 
+  // Handle profile navigation
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container px-4 py-6 sm:py-8 mx-auto max-w-6xl">
-        {/* Header with Profile Button */}
+      {/* Header Section */}
+      <header className="w-full bg-white/80 backdrop-blur-md border-b transition-shadow duration-300 py-4">
+        <div className="container mx-auto flex justify-between items-center px-4 sm:px-6 lg:px-8">
+          <div className="text-xl sm:text-2xl font-bold text-[#0B60B0] flex items-center">
+            <Zap className="mr-2" />
+            uply
+          </div>
+          {/* Profile button for desktop */}
+          <div className="hidden sm:block">
+            <Button 
+              className="bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white"
+              onClick={handleProfileClick}
+            >
+              <UserCircle className="mr-2 h-4 w-4" />
+              Profile
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Dashboard Content */}
+      <div className="container mx-auto px-4 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <div className="flex justify-between items-center">
             <div>
@@ -118,23 +143,20 @@ const Dashboard: React.FC = () => {
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mt-1">Welcome back, {match}</h1>
             </div>
           </div>
-          {/* Profile button below welcome heading on mobile */}
-          <div className="mt-3 sm:hidden">
-            <Button className="bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white text-sm px-3 py-1 h-8">
-              <UserCircle className="mr-2 h-4 w-4" />
-              Profile
-            </Button>
-          </div>
-          {/* Desktop profile button */}
-          <div className="hidden sm:block sm:absolute sm:top-8 sm:right-8 md:right-12 lg:right-16">
-            <Button className="bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white">
+
+          {/* Profile button for mobile */}
+          <div className="sm:hidden mt-3">
+            <Button 
+              className="bg-[#0B60B0] hover:bg-[#0B60B0]/80 text-white text-sm px-3 py-1 h-8"
+              onClick={handleProfileClick}
+            >
               <UserCircle className="mr-2 h-4 w-4" />
               Profile
             </Button>
           </div>
         </div>
 
-        {/* Feature Cards - 2 columns on mobile */}
+        {/* Feature Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8 sm:mb-12">
           {featureCards.map((card, index) => (
             <Card
@@ -198,7 +220,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
