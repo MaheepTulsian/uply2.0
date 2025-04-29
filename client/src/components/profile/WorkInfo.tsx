@@ -1,127 +1,154 @@
-import React, { useState, useEffect } from "react";
-import { useForm, SubmitHandler, FieldValues } from "react-hook-form";
-import axios from "axios";
-import { useParams } from "react-router-dom";
+import React, { useState, useEffect, RefObject } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Building2 } from "lucide-react";
 import useAuthStore from "@/store/useAuthStore";
+import { fetchProfile, updateWorkExperience } from "@/utils/ProfileApi";
 
 interface WorkExperience {
   company: string;
   position: string;
   startDate: string;
-  endDate: string;
+  endDate?: string;
   description: string;
   isCurrent: boolean;
 }
 
+interface WorkFormData {
+  work_experience: WorkExperience[];
+}
+
 interface WorkInfoProps {
-  formRef: React.RefObject<HTMLFormElement>;
+  formRef?: RefObject<HTMLFormElement>;
   onSuccess?: () => void;
 }
 
 const WorkInfo: React.FC<WorkInfoProps> = ({ formRef, onSuccess }) => {
   const { user } = useAuthStore();
-  const id = user?.userId;
+  const userId = user?.userId;
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const API_BASE_URL = "http://localhost:8000/api/profile";
 
-  const form = useForm<{
-    workExperience: WorkExperience[];
-  }>({
+  const form = useForm<WorkFormData>({
     defaultValues: {
-      workExperience: [{
-        company: "",
-        position: "",
-        startDate: "",
-        endDate: "",
-        description: "",
-        isCurrent: false,
-      }]
+      work_experience: [
+        {
+          company: "",
+          position: "",
+          startDate: "",
+          endDate: "",
+          description: "",
+          isCurrent: false
+        }
+      ]
     }
   });
 
   useEffect(() => {
-    const fetchWorkExperience = async () => {
-      if (!id) return;
+    const loadWorkExperience = async () => {
+      if (!userId) return;
       
       setIsLoading(true);
       setFetchError(null);
+      
       try {
-        const response = await axios.get(`${API_BASE_URL}/${id}/getprofile`);
-        const profileData = response.data;
+        const result = await fetchProfile(userId);
         
-        if (profileData.workEx && profileData.workEx.length > 0) {
-          setIsSubmitted(true);
-          const formattedWorkEx = profileData.workEx.map((exp: WorkExperience) => ({
-            ...exp,
-            startDate: exp.startDate?.split('T')[0] || "",
-            endDate: exp.isCurrent ? "" : (exp.endDate?.split('T')[0] || "")
-          }));
-          form.reset({ workExperience: formattedWorkEx });
+        if (result.success && result.data) {
+          const profileData = result.data;
+          
+          if (profileData.workEx && profileData.workEx.length > 0) {
+            setIsSubmitted(true);
+            const formattedWorkEx = profileData.workEx.map((exp: WorkExperience) => ({
+              ...exp,
+              startDate: exp.startDate?.split('T')[0] || "",
+              endDate: exp.isCurrent ? "" : (exp.endDate?.split('T')[0] || "")
+            }));
+            form.reset({ work_experience: formattedWorkEx });
+          }
+        } else {
+          setFetchError(result.error || "Failed to fetch work experience");
         }
       } catch (error) {
-        console.error('Error fetching work experience:', error);
-        setFetchError(error.response?.data?.error || 'Failed to fetch work experience');
+        console.error("Error loading work experience:", error);
+        setFetchError("An unexpected error occurred while loading your work experience");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchWorkExperience();
-  }, [id, form]);
+    loadWorkExperience();
+  }, [userId, form]);
 
-  const onSubmit: SubmitHandler<{ workExperience: WorkExperience[] }> = async (data) => {
-    if (!id) return;
+  const onSubmit: SubmitHandler<WorkFormData> = async (data) => {
+    if (!userId) return;
+    
+    setIsLoading(true);
     
     try {
-      const response = await axios.post(`${API_BASE_URL}/${id}/workexinfo`, {
-        workExperience: data.workExperience
-      });
+      const result = await updateWorkExperience(userId, data.work_experience);
       
-      if (response.status === 200) {
+      if (result.success) {
         setIsSubmitted(true);
-        if (onSuccess) onSuccess();
+        onSuccess?.();
+      } else {
+        form.setError("root", {
+          type: "manual",
+          message: result.error || "Failed to update work experience"
+        });
       }
     } catch (error) {
-      console.error('Submission error:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to update work experience';
-      form.setError('root', { type: 'manual', message: errorMessage });
+      console.error("Error submitting work experience:", error);
+      form.setError("root", {
+        type: "manual",
+        message: "An unexpected error occurred"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const addWorkExperience = () => {
-    const currentWork = form.getValues("workExperience");
-    form.setValue("workExperience", [
-      ...currentWork,
-      { company: "", position: "", startDate: "", endDate: "", description: "", isCurrent: false }
+    const current = form.getValues("work_experience");
+    form.setValue("work_experience", [
+      ...current,
+      {
+        company: "",
+        position: "",
+        startDate: "",
+        endDate: "",
+        description: "",
+        isCurrent: false
+      }
     ]);
   };
 
   const removeWorkExperience = (index: number) => {
-    const currentWork = form.getValues("workExperience");
-    const updatedWork = currentWork.filter((_, i) => i !== index);
-    form.setValue("workExperience", updatedWork);
+    const current = form.getValues("work_experience");
+    if (current.length > 1) {
+      const updated = current.filter((_, i) => i !== index);
+      form.setValue("work_experience", updated);
+    }
   };
 
   const handleCheckboxChange = (index: number, checked: boolean) => {
-    form.setValue(`workExperience.${index}.isCurrent`, checked);
+    form.setValue(`work_experience.${index}.isCurrent`, checked);
     if (checked) {
-      form.setValue(`workExperience.${index}.endDate`, "");
+      form.setValue(`work_experience.${index}.endDate`, "");
     }
   };
 
   if (isLoading) {
     return (
       <Card className="p-4 w-full max-w-3xl bg-background border-none shadow-none flex justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#0B60B0]" />
       </Card>
     );
   }
@@ -130,92 +157,162 @@ const WorkInfo: React.FC<WorkInfoProps> = ({ formRef, onSuccess }) => {
     return (
       <Card className="p-4 w-full max-w-3xl bg-background border-none shadow-none">
         <div className="text-red-500">{fetchError}</div>
-        <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
       </Card>
     );
   }
 
-  const currentWork = form.watch("workExperience") || [];
+  const workExperiences = form.watch("work_experience") || [];
 
   return (
     <Card className="p-4 w-full max-w-3xl bg-background border-none shadow-none">
       {isSubmitted ? (
         <div className="space-y-4 text-lg">
-          <h2 className="text-xl font-semibold">Work Experience</h2>
-          {currentWork.map((work, index) => (
-            <div key={index} className="border p-3 rounded-lg relative">
-              <p><strong>Company:</strong> {work.company}</p>
-              <p><strong>Position:</strong> {work.position}</p>
-              <p><strong>Start Date:</strong> {work.startDate}</p>
-              {!work.isCurrent && <p><strong>End Date:</strong> {work.endDate}</p>}
-              <p><strong>Description:</strong> {work.description}</p>
-              <p><strong>Currently Working:</strong> {work.isCurrent ? "Yes" : "No"}</p>
-            </div>
-          ))}
-          <Button variant="outline" onClick={() => setIsSubmitted(false)}>Edit</Button>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-6 w-6 text-[#0B60B0]" />
+            <h2 className="text-xl font-semibold text-[#0B60B0]">Work Experience</h2>
+          </div>
+          
+          {workExperiences.length > 0 ? (
+            workExperiences.map((work, index) => (
+              <div key={index} className="border border-gray-200 p-4 rounded-lg">
+                <div className="flex justify-between">
+                  <h3 className="font-medium text-lg">{work.position}</h3>
+                  {work.isCurrent && (
+                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                      Current
+                    </span>
+                  )}
+                </div>
+                <p className="text-[#0B60B0] font-medium">{work.company}</p>
+                <p className="text-gray-500 text-sm">
+                  {work.startDate} - {work.isCurrent ? "Present" : work.endDate}
+                </p>
+                <p className="mt-2">{work.description}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">No work experience added yet.</p>
+          )}
+          
+          <Button 
+            variant="outline" 
+            className="border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-white"
+            onClick={() => setIsSubmitted(false)}
+          >
+            Edit Work Experience
+          </Button>
         </div>
       ) : (
         <Form {...form}>
           <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            {currentWork.map((work, index) => (
-              <div key={index} className="border p-4 rounded-lg space-y-3 relative">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-6 w-6 text-[#0B60B0]" />
+              <h2 className="text-xl font-semibold text-[#0B60B0]">Work Experience</h2>
+            </div>
+            <p className="text-gray-500 text-sm mb-4">Add your professional experience, including full-time roles, internships, and part-time positions.</p>
+            
+            {workExperiences.map((_, index) => (
+              <div key={index} className="border border-gray-200 p-4 rounded-lg space-y-3 relative">
                 <button
                   type="button"
                   className="absolute top-2 right-2 text-gray-500 hover:text-red-600"
                   onClick={() => removeWorkExperience(index)}
-                  disabled={currentWork.length <= 1}
+                  disabled={workExperiences.length <= 1}
                 >
                   <X size={20} />
                 </button>
-
-                <h3 className="text-lg font-semibold">Experience {index + 1}</h3>
+                <h3 className="text-lg font-medium">Experience {index + 1}</h3>
                 
-                {["company", "position", "startDate"].map((fieldName) => (
-                  <FormField
-                    key={fieldName}
-                    control={form.control}
-                    name={`workExperience.${index}.${fieldName}`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {fieldName.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}
-                        </FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            type={fieldName.includes("Date") ? "date" : "text"} 
-                            required 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
-
                 <FormField
                   control={form.control}
-                  name={`workExperience.${index}.description`}
+                  name={`work_experience.${index}.company`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Company</FormLabel>
                       <FormControl>
-                        <Textarea {...field} />
+                        <Input 
+                          {...field} 
+                          placeholder="e.g. Google, Microsoft, etc." 
+                          required 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {!form.watch(`workExperience.${index}.isCurrent`) && (
+                <FormField
+                  control={form.control}
+                  name={`work_experience.${index}.position`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Position</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          placeholder="e.g. Software Engineer, Product Manager" 
+                          required 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`work_experience.${index}.startDate`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="date" 
+                          required 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`work_experience.${index}.isCurrent`}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => 
+                            handleCheckboxChange(index, checked as boolean)
+                          }
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Currently working here</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {!form.watch(`work_experience.${index}.isCurrent`) && (
                   <FormField
                     control={form.control}
-                    name={`workExperience.${index}.endDate`}
+                    name={`work_experience.${index}.endDate`}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>End Date</FormLabel>
                         <FormControl>
-                          <Input {...field} type="date" required={!form.watch(`workExperience.${index}.isCurrent`)} />
+                          <Input 
+                            {...field} 
+                            type="date" 
+                            required={!form.watch(`work_experience.${index}.isCurrent`)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -225,16 +322,18 @@ const WorkInfo: React.FC<WorkInfoProps> = ({ formRef, onSuccess }) => {
 
                 <FormField
                   control={form.control}
-                  name={`workExperience.${index}.isCurrent`}
+                  name={`work_experience.${index}.description`}
                   render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2">
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => handleCheckboxChange(index, checked)}
+                        <Textarea 
+                          {...field} 
+                          placeholder="Describe your responsibilities, achievements, and the technologies you worked with" 
+                          className="min-h-32"
                         />
                       </FormControl>
-                      <FormLabel>Currently Working Here</FormLabel>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -242,14 +341,34 @@ const WorkInfo: React.FC<WorkInfoProps> = ({ formRef, onSuccess }) => {
             ))}
 
             <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={addWorkExperience}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={addWorkExperience}
+                className="border-[#0B60B0] text-[#0B60B0] hover:bg-[#0B60B0] hover:text-white"
+              >
                 Add Another Experience
               </Button>
-              <Button type="submit">Save Work Experience</Button>
+              <Button 
+                type="submit"
+                className="bg-[#0B60B0] hover:bg-[#0B60B0]/90 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Work Experience"
+                )}
+              </Button>
             </div>
 
             {form.formState.errors.root && (
-              <p className="text-red-500">{form.formState.errors.root.message}</p>
+              <p className="text-red-500 bg-red-50 p-2 rounded">
+                {form.formState.errors.root.message}
+              </p>
             )}
           </form>
         </Form>
