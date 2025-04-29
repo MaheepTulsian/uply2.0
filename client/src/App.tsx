@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import LandingPage from "@/pages/LandingPage";
 import AuthPage from "@/pages/AuthPage";
 import useAuthStore from "@/store/useAuthStore";
+import Dashboard from "./pages/Dashboard";
 
 // Create a type for protected route props
 interface ProtectedRouteProps {
@@ -30,7 +31,7 @@ function App() {
         {/* Protected routes */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <div>Dashboard Page (To be implemented)</div>
+            <Dashboard />
           </ProtectedRoute>
         } />
         
